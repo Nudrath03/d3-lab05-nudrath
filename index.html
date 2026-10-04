@@ -1,1 +1,181 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D3 Sankey - Data Pipeline</title>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12/dist/d3-sankey.min.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+    }
+
+    svg {
+        border: 1px solid #ccc;
+    }
+
+    .link {
+        fill: none;
+        stroke-opacity: 0.4;
+    }
+
+    .node rect {
+        cursor: pointer;
+    }
+
+    .node text {
+        font-size: 11px;
+    }
+</style>
+</head>
+
+<body>
+
+<h2>D3.js Sankey Diagram - Data Pipeline</h2>
+
+<div id="graph"></div>
+
+<script>
+
+const width = 1000;
+const height = 500;
+
+const nodes = [
+    {name: "Web Logs"},
+    {name: "Mobile App"},
+    {name: "CRM Export"},
+    {name: "Data Cleaning"},
+    {name: "Rejected"},
+    {name: "EDA"},
+    {name: "Feature Engineering"},
+    {name: "Model Training"},
+    {name: "Evaluation"},
+    {name: "Visualization"},
+    {name: "Deployment"}
+];
+
+const links = [
+    {source: "Web Logs", target: "Data Cleaning", value: 5000},
+    {source: "Mobile App", target: "Data Cleaning", value: 3000},
+    {source: "CRM Export", target: "Data Cleaning", value: 2000},
+
+    {source: "Data Cleaning", target: "EDA", value: 8500},
+    {source: "Data Cleaning", target: "Rejected", value: 1500},
+
+    {source: "EDA", target: "Feature Engineering", value: 6000},
+    {source: "EDA", target: "Visualization", value: 2500},
+
+    {source: "Feature Engineering", target: "Model Training", value: 4800},
+    {source: "Feature Engineering", target: "Evaluation", value: 1200},
+
+    {source: "Model Training", target: "Evaluation", value: 4800},
+
+    {source: "Evaluation", target: "Deployment", value: 5000},
+    {source: "Evaluation", target: "Visualization", value: 1000}
+];
+
+const svg = d3.select("#graph")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+const sankey = d3.sankey()
+    .nodeId(d => d.name)
+    .nodeWidth(18)
+    .nodePadding(20)
+    .extent([[20, 20], [width - 20, height - 20]]);
+
+const graph = sankey({
+    nodes: nodes.map(d => ({...d})),
+    links: links.map(d => ({...d}))
+});
+
+const color = d3.scaleOrdinal(d3.schemeTableau10);
+
+/* Draw links */
+
+svg.append("g")
+    .selectAll("path")
+    .data(graph.links)
+    .join("path")
+    .attr("class", "link")
+    .attr("d", d3.sankeyLinkHorizontal())
+    .attr("stroke", d => color(d.source.name))
+    .attr("stroke-width", d => Math.max(1, d.width));
+
+/* Draw nodes */
+
+const node = svg.append("g")
+    .selectAll("g")
+    .data(graph.nodes)
+    .join("g")
+    .attr("class", "node");
+
+/* Node rectangles */
+
+node.append("rect")
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => d.y1 - d.y0)
+    .attr("fill", d => color(d.name))
+
+    /* Hover effect */
+
+    .on("mouseover", function(event, d) {
+
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr(
+                "fill",
+                d3.color(color(d.name)).brighter(0.7)
+            );
+    })
+
+    .on("mouseout", function(event, d) {
+
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("fill", color(d.name));
+    });
+
+/* Node labels */
+
+node.append("text")
+    .text(d => d.name)
+    .attr("x", d => {
+
+        if (d.x0 < width / 2) {
+            return d.x1 + 6;
+        } else {
+            return d.x0 - 6;
+        }
+
+    })
+    .attr("y", d => (d.y0 + d.y1) / 2)
+    .attr("dy", "0.35em")
+    .attr("text-anchor", d => {
+
+        if (d.x0 < width / 2) {
+            return "start";
+        } else {
+            return "end";
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
